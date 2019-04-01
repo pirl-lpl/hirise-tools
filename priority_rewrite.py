@@ -67,47 +67,31 @@ def priority_rewrite(records, reset_str=None, keepzero=False) -> list:
     for r in records:
         count[int(r['Request priority'])] += 1
 
-    reset = dict()
-    if reset_str:
-        for elem in reset_str.split(','):
-            (k, v) = elem.split(':')
-            reset.setdefault(int(k), int(v))
-        for v in reset.values():
-            if v in count:
-                raise KeyError(f'The reset priority, {v} already exists as a '
-                               'priority group in this file.')
+    reset = make_reset_dict(reset_str, count)
 
     for k in count.keys():
         if k in reset:
-            c = count[k]
+            count[reset[k]] = count[k]
             del count[k]
-            count[reset[k]] = c
+
+    ordered_p = sort_and_filter(count.keys(), keepzero)
 
     new_records = list()
-    if keepzero:
-        ordered_p = sorted(count.keys())
-    else:
-        ordered_p = sorted(filter(lambda x: x > 0, count.keys()))
-
     for i, pri in enumerate(ordered_p):
         try:
             next_pri = ordered_p[i + 1]
         except IndexError:
-            next_pri = pri + count[pri] + 1
+            next_pri = None
 
-        if pri in reset.values():
-            for (k, v) in reset.items():
-                if pri == v:
-                    old_pri = k
-            pri_records = list(filter(lambda x: int(x['Request priority']) == old_pri,
-                                      records))
-        else:
-            pri_records = list(filter(lambda x: int(x['Request priority']) == pri,
-                                      records))
+        pri_records = get_records_for_this_priority(pri, records, reset)
         pri_records.sort(key=lambda x: abs(float(x['Latitude'])), reverse=True)
 
-        span = next_pri - pri
-        if count[pri] > span:
+        if is_enough_space(pri, next_pri, count[pri]):
+            for j, r in enumerate(pri_records):
+                d = collections.OrderedDict(r)
+                d['Request priority'] = pri + j
+                new_records.append(d)
+        else:
             logging.warning('Starting at {} we need {} spots, but the next '
                             'priority is {}.'.format(pri,
                                                      count[pri],
@@ -117,12 +101,47 @@ def priority_rewrite(records, reset_str=None, keepzero=False) -> list:
             for r in pri_records:
                 d = collections.OrderedDict(r)
                 new_records.append(d)
-        else:
-            for j, r in enumerate(pri_records):
-                d = collections.OrderedDict(r)
-                d['Request priority'] = pri + j
-                new_records.append(d)
     return new_records
+
+
+def make_reset_dict(s: str, priorities) -> dict:
+    reset = dict()
+    if s:
+        for elem in s.split(','):
+            (k, v) = elem.split(':')
+            reset.setdefault(int(k), int(v))
+        for v in reset.values():
+            if v in priorities:
+                raise KeyError(f'The reset priority, {v} already exists as a '
+                               'priority group in this file.')
+    return reset
+
+
+def sort_and_filter(iterable, keepzero=False) -> list:
+    if keepzero:
+        return sorted(iterable)
+    else:
+        return sorted(filter(lambda x: x > 0, iterable))
+
+
+def get_records_for_this_priority(pri: int, records: list, reset: dict) -> list:
+    out_records = list()
+    if pri in reset.values():
+        for (k, v) in reset.items():
+            if pri == v:
+                pri = k
+    out_records = list(filter(lambda x: int(x['Request priority']) == pri,
+                              records))
+    return out_records
+
+
+def is_enough_space(priority: int, next_priority, span: int) -> bool:
+    if next_priority is None:
+        return True
+    if span <= (next_priority - priority):
+        return True
+    else:
+        return False
 
 
 def get_input(p: os.PathLike) -> collections.abc.Sequence:
