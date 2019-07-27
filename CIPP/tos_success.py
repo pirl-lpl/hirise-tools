@@ -26,17 +26,37 @@ from textwrap import dedent, fill
 
 
 def manual(option, opt, value, parser):
-    usage = '''\
+    """Print a brief usage manual."""
+    purpose = '''\
         This program reads a text file WTH list to extract the suggestions, and
         it compares the IDs with the records in the input IOF PTF.
     '''
+    formats = '''\
+        The WTH list can be a simple text file pasted from the WTH wiki page, or
+        it can be a CSV file exported from a spreadsheet application. The PTF
+        can be a HiRISE PTF, IPTF, or CSV file.
+    '''
     print(parser.usage + "\n", file=sys.stderr)
-    print(fill(dedent(usage), 80), file=sys.stderr)
+    print(fill(dedent(purpose), 80) + "\n", file=sys.stderr)
+    print(fill(dedent(formats), 80) + "\n", file=sys.stderr)
     sys.exit()
 
 class Usage(Exception):
     def __init__(self, msg):
         self.msg = msg
+
+def read_file(filename):
+    """Read a file, trying one of several encodings."""
+    lines = []
+    for encoding in [None, "latin_1", "mac_roman"]:
+        try:
+            with open(filename, newline='', encoding=encoding) as file:
+                lines = file.read().splitlines()
+        except:
+            pass
+        if len(lines) > 0:
+            break
+    return lines
 
 def main():
     try:
@@ -54,26 +74,32 @@ def main():
 
             if not options.wthfile: parser.error("need wth.csv file")
 
-
         except optparse.OptionError as err:
             raise Usage(err)
 
+
         wth = {}
-        with open( options.wthfile, newline='' ) as csvfile:
-            wthreader = csv.reader( csvfile )
-            for row in wthreader:
-                if row: wth[row[0]] = row[0]+','+','.join(row[2:])
+        wthfile = read_file(options.wthfile)
+        if len(wthfile) == 0:
+        	print("Unable to read " + options.wthfile + ".", file=sys.stderr)
+        	return 1
+        wthreader = csv.reader(wthfile)
+        for row in wthreader:
+            if row: wth[row[0]] = row[0]+','+','.join(row[2:])
 
         foundwths = 0
-        with open( args[0], newline='' ) as iofile:
-            iofreader = csv.reader( iofile )
-            for row in iofreader:
-                if len(row) > 19 and "H" in row[0]:
-                    for suggestion in list(wth):
-                        if suggestion in row[19]:
-                            foundwths += 1
-                            #print( row[19] )
-                            print(wth[suggestion])
+        iofile = read_file(args[0])
+        if len(iofile) == 0:
+            print("Unable to read " + args[0] + ".", file=sys.stderr)
+            return 1
+        iofreader = csv.reader(iofile)
+        for row in iofreader:
+            if len(row) > 19 and "H" in row[0]:
+                for suggestion in list(wth):
+                    if suggestion in row[19]:
+                        foundwths += 1
+                        #print( row[19] )
+                        print(wth[suggestion])
 
         print ("Found: "+str(foundwths)+" of "+str(len(wth)))
 
