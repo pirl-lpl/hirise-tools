@@ -22,14 +22,16 @@
 
 
 import os, sys, optparse, csv
+from textwrap import dedent, fill
 
 
-def man(option, opt, value, parser):
-    print >>sys.stderr, parser.usage
-    print >>sys.stderr, '''\
-This program reads a text file to extract the Suggestion IDs from the WTH list, and compares it
-with the actual records in the iof.csv file.
-'''
+def manual(option, opt, value, parser):
+    usage = '''\
+        This program reads a text file WTH list to extract the suggestions, and
+        it compares the IDs with the records in the input IOF PTF.
+    '''
+    print(parser.usage + "\n", file=sys.stderr)
+    print(fill(dedent(usage), 80), file=sys.stderr)
     sys.exit()
 
 class Usage(Exception):
@@ -41,7 +43,7 @@ def main():
         try:
             usage = "usage: tos_success.py [--help][--manual] -w <wth.csv> <iof.csv>"
             parser = optparse.OptionParser(usage=usage)
-            parser.add_option("--manual", action="callback", callback=man,
+            parser.add_option("--manual", "-m", action="callback", callback=manual,
                               help="Read the manual.")
             parser.add_option("--wth", "-w", dest="wthfile", 
                               help="File with text copied from WTH list.")
@@ -76,8 +78,7 @@ def main():
         print ("Found: "+str(foundwths)+" of "+str(len(wth)))
 
     except Usage as err:
-        print >>sys.stderr, err.msg
-        # print >>sys.stderr, "for help use --help"
+        print(err.msg, file=sys.stderr)
         return 2
 
 if __name__ == "__main__":
