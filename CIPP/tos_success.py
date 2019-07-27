@@ -14,11 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This program is very specifically for HiRISE CIPP statistics, to determine how many 
-# desired suggestions made it through the TOS process.  It has not been thoroughly 
-# tested and is likely to fail for you.  To create the wth.csv file, just go to the WTH list,
-# copy the text from the MEPs or the WTHs, or the HiKERs or whatever, and copy them into a
-# text file.
+# This program is very specifically for HiRISE CIPP statistics, to determine how
+# many desired suggestions made it through the TOS process.  It has not been
+# thoroughly tested and is likely to fail for you.  To create the wth.txt CSV
+# file, just go to the WTH list, copy the text from the MEPs or the WTHs, or the
+# HiKERs or whatever, and copy them into a text file.
 
 
 import os, sys, optparse, csv
@@ -61,7 +61,7 @@ def read_file(filename):
 def main():
     try:
         try:
-            usage = "usage: tos_success.py [--help][--manual] -w <wth.csv> <iof.csv>"
+            usage = "usage: tos_success.py [--help][--manual] -w <wth.txt> <iof.iptf>"
             parser = optparse.OptionParser(usage=usage)
             parser.add_option("--manual", "-m", action="callback", callback=manual,
                               help="Read the manual.")
@@ -70,9 +70,9 @@ def main():
 
             (options, args) = parser.parse_args()
 
-            if not args: parser.error("need iof.csv file")
+            if not args: parser.error("need iof.iptf file")
 
-            if not options.wthfile: parser.error("need wth.csv file")
+            if not options.wthfile: parser.error("need wth.txt or or wth.csv file")
 
         except optparse.OptionError as err:
             raise Usage(err)
