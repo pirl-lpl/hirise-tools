@@ -98,7 +98,6 @@ def main():
                 for suggestion in list(wth):
                     if suggestion in row[19]:
                         foundwths += 1
-                        #print( row[19] )
                         print(wth[suggestion])
 
         print ("Found: "+str(foundwths)+" of "+str(len(wth)))
