@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 # Copyright 2018, Ross A. Beyer (rbeyer@seti.org)
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,9 @@
 # file, just go to the WTH list, copy the text from the MEPs or the WTHs, or the
 # HiKERs or whatever, and copy them into a text file.
 
-
-import os, sys, optparse, csv
+import csv
+import optparse
+import sys
 from textwrap import dedent, fill
 
 
@@ -41,22 +42,31 @@ def manual(option, opt, value, parser):
     print(fill(dedent(formats), 80) + "\n", file=sys.stderr)
     sys.exit()
 
+
 class Usage(Exception):
+
     def __init__(self, msg):
         self.msg = msg
 
-def read_file(filename):
-    """Read a file, trying one of several encodings."""
-    lines = []
-    for encoding in [None, "latin_1", "mac_roman"]:
-        try:
-            with open(filename, newline='', encoding=encoding) as file:
-                lines = file.read().splitlines()
-        except:
-            pass
-        if len(lines) > 0:
-            break
-    return lines
+
+def guess_encoding(path):
+    """Sample a file, seeing if the platform-dependent encoding works, and
+       trying latin_1 if it doesn't.
+
+       A more robust solution would be to use the chardet library,
+       but we want to try and keep this dependency-free."""
+
+    try:
+        e = None
+        with open(path, newline='', encoding=e) as f:
+            line = f.readline()
+        return e
+    except UnicodeDecodeError:
+        e = 'latin_1'
+        with open(path, newline='', encoding=e) as f:
+            line = f.readline()
+        return e
+
 
 def main():
     try:
@@ -65,7 +75,7 @@ def main():
             parser = optparse.OptionParser(usage=usage)
             parser.add_option("--manual", "-m", action="callback", callback=manual,
                               help="Read the manual.")
-            parser.add_option("--wth", "-w", dest="wthfile", 
+            parser.add_option("--wth", "-w", dest="wthfile",
                               help="File with text copied from WTH list.")
 
             (options, args) = parser.parse_args()
@@ -79,26 +89,23 @@ def main():
 
 
         wth = {}
-        wthfile = read_file(options.wthfile)
-        if len(wthfile) == 0:
-        	print("Unable to read " + options.wthfile + ".", file=sys.stderr)
-        	return 1
-        wthreader = csv.reader(wthfile)
-        for row in wthreader:
-            if row: wth[row[0]] = row[0]+','+','.join(row[2:])
+
+        with open(options.wthfile, newline='',
+                  encoding=guess_encoding(options.wthfile)) as wthfile:
+            wthreader = csv.reader(wthfile)
+            for row in wthreader:
+                if row: wth[row[0]] = row[0]+','+','.join(row[2:])
 
         foundwths = 0
-        iofile = read_file(args[0])
-        if len(iofile) == 0:
-            print("Unable to read " + args[0] + ".", file=sys.stderr)
-            return 1
-        iofreader = csv.reader(iofile)
-        for row in iofreader:
-            if len(row) > 19 and "H" in row[0]:
-                for suggestion in list(wth):
-                    if suggestion in row[19]:
-                        foundwths += 1
-                        print(wth[suggestion])
+        with open(args[0], newline='',
+                  encoding=guess_encoding(args[0])) as iofile:
+            iofreader = csv.reader(iofile)
+            for row in iofreader:
+                if len(row) > 19 and "H" in row[0]:
+                    for suggestion in list(wth):
+                        if suggestion in row[19]:
+                            foundwths += 1
+                            print(wth[suggestion])
 
         print ("Found: "+str(foundwths)+" of "+str(len(wth)))
 
