@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Converts a PTF to a plain CSV file with a single header line."""
 
 # Copyright 2019, Ross A. Beyer (rbeyer@seti.org)
