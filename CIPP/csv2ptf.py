@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Converts a CSV file to a PTF file based on the header of an example PTF file."""
 
 # Copyright 2019, Ross A. Beyer (rbeyer@seti.org)
