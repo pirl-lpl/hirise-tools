@@ -25,6 +25,17 @@ header_order = ('FILE_TYPE', 'START_TIME', 'STOP_TIME', 'USERNAME',
                 'SPK',
                 'XZONE')
 
+fieldnames = ('Instrument Set', 'Predict Time', 'Latitude', 'Longitude',
+              'Elevation', 'Observation Type', 'Orbit Number',
+              'Orbit Alternatives', 'Observation Duration',
+              'Setup Duration', 'Orbital Data Table', 'Parameters Table',
+              'Sequence Filename', 'Downlink Priority', 'Product ID',
+              'Spare 1', 'Spare 2', 'Spare 3', 'Spare 4', 'Comment',
+              'Request Priority', 'Coordinated Track History',
+              'Raw Data Volume', 'Team Database ID',
+              'Request Category', 'Compression', 'Pixel Scale',
+              'Observation Mode', 'Ancillary Data', 'LsubS', 'Roll Angle')
+
 
 class PTF(collections.abc.Sequence):
     """Represents a Payload Target File's (PTF's) data as a list of dicts.
@@ -111,8 +122,8 @@ class PTF(collections.abc.Sequence):
            A three-element namedtuple is returned: the first element
            is a *dictionary* of the name:value information at the
            top of the file, the second element is a *list* of the
-           of the fields that decorate the top of the ptf
-           rows, and the third element is a *list* of dicts
+           of the fields that decorate the top of the ptf rows, and
+           the third element is a *list* of collections.OrderedDict
            that represent each row of the ptf records.
 
            The contents of a PTF file look like this::
@@ -205,16 +216,20 @@ class PTF(collections.abc.Sequence):
             line = lines.popleft()
         lines.appendleft(line)
 
-        for fn in filter(lambda x: x.startswith('Instrument set'),
-                         c.splitlines()):
-            fieldnames = fn.split(',')
+        my_fieldnames = None
+        for comment_line in c.splitlines():
+            if fieldnames[0] in comment_line:
+                my_fieldnames = comment_line.split(',')
 
-        reader = csv.DictReader(lines, fieldnames=fieldnames)
+        if my_fieldnames is None:
+            my_fieldnames = fieldnames
+
+        reader = csv.DictReader(lines, fieldnames=my_fieldnames)
 
         for row in reader:
             ptf_rows.append(row)
 
-        return(d, c, fieldnames, ptf_rows)
+        return(d, c, my_fieldnames, ptf_rows)
 
     def dumps(self) -> str:
         s = io.StringIO()
@@ -222,7 +237,7 @@ class PTF(collections.abc.Sequence):
 
     def dump(self, p: os.PathLike) -> None:
         with open(p, mode='w') as f:
-            self._dump_it(f)
+            f.write(self.dumps())
 
     def _dump_it(self, f: io.TextIOBase) -> io.TextIOBase:
         for k in header_order[:-2]:
@@ -244,15 +259,12 @@ class PTF(collections.abc.Sequence):
         f.write('# ' + ','.join(list(map(lambda x: x.title(), self.fieldnames))) + '\n')
         f.write('# ' + ','.join(map(str, list(range(1, len(self.fieldnames) + 1)))) + '\n')
         f.write('# ' + ','.join(list(map(lambda x: x.capitalize(), self.fieldnames))) + '\n')
-        writer = csv.DictWriter(f, fieldnames=self.fieldnames,
-                                extrasaction='ignore')
+        writer = csv.DictWriter(f, fieldnames=fieldnames,
+                                extrasaction='ignore',
+                                restval='')
         for record in self.ptf_recs:
             writer.writerow(record)
         return f
-
-    def dump(self, p: os.PathLike) -> None:
-        with open(p, mode='w') as f:
-            f.write(self.dumps())
 
 
 def loads(ptf_str: str) -> PTF:
@@ -260,7 +272,27 @@ def loads(ptf_str: str) -> PTF:
 
 
 def load(ptf_path: os.PathLike) -> PTF:
-    with open(ptf_path, 'r') as f:
+    with open(ptf_path, 'r',
+              encoding=guess_encoding(f)) as f:
         ptf_str = f.read()
 
     return loads(ptf_str)
+
+
+def guess_encoding(path):
+    """Sample a file, seeing if the platform-dependent encoding works, and
+       trying latin_1 if it doesn't.
+
+       A more robust solution would be to use the chardet library,
+       but we want to try and keep this dependency-free."""
+
+    try:
+        e = None
+        with open(path, newline='', encoding=e) as f:
+            f.readline()
+        return e
+    except UnicodeDecodeError:
+        e = 'latin_1'
+        with open(path, newline='', encoding=e) as f:
+            f.readline()
+        return e
