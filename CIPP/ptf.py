@@ -20,6 +20,9 @@ import csv
 import io
 import os
 
+from collections import Counter
+
+
 header_order = ('FILE_TYPE', 'START_TIME', 'STOP_TIME', 'USERNAME',
                 'CREATION_DATE', 'SCLK_SCET', 'OPTG', 'ROLL_LIMITS',
                 'SPK',
@@ -140,15 +143,35 @@ class PTF(collections.abc.Sequence):
             for line in c:
                 f.write('# ' + line + '\n')
             f.write('#\n')
-        f.write('# ' + ','.join(list(map(lambda x: x.title(), self.fieldnames))) + '\n')
-        f.write('# ' + ','.join(map(str, list(range(1, len(self.fieldnames) + 1)))) + '\n')
-        f.write('# ' + ','.join(list(map(lambda x: x.capitalize(), self.fieldnames))) + '\n')
+        f.write('# ' + ','.join(x.title() for x in fieldnames) + '\n')
+        f.write('# ' + ','.join(map(str, list(range(1, len(fieldnames) + 1)))) + '\n')
+        f.write('# ' + ','.join(x.capitalize() for x in fieldnames) + '\n')
         writer = csv.DictWriter(f, fieldnames=fieldnames,
                                 extrasaction='ignore',
                                 restval='')
-        for record in self.ptf_recs:
-            writer.writerow(record)
+        if(Counter(fieldnames) == Counter(self.fieldnames)):
+            for record in self.ptf_recs:
+                writer.writerow(record)
+        else:
+            t = key_translation(fieldnames, self.fieldnames)
+            for record in self.ptf_recs:
+                writer.writerow({t[k]: v for k, v in record.items()})
         return f
+
+
+def key_translation(new_keys: list, old_keys: list) -> dict:
+    '''The old_keys will be the keys of the returned dictionary,
+       and the mapping of the new_keys will be the values.'''
+    d = dict()
+
+    nk = dict()
+    for n in new_keys:
+        nk[n.casefold()] = n
+
+    for k in old_keys:
+        d[k] = nk.get(k.casefold(), k)
+
+    return d
 
 
 def parse(ptf_str: str) -> tuple:

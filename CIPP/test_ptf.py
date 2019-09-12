@@ -7,8 +7,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
+#     http://www.apache.org/licenses/LICENSE-2.0 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -173,6 +172,13 @@ H,2019-104T01:33:31.327,19.476,312.078,-4.305,4,59594a,59594a,30.00,321.0,,,N/A,
         # with patch('ptf.open', mo):
         #     self.assertEqual('latin_1', ptf.guess_encoding('path/to/some/file'))
 
-    def test_dump(self):
-        p = ptf.loads(ptf_str)
-        # print(p.dumps())
+    # def test_dump(self):
+    #     p = ptf.loads(ptf_str)
+    #     # print(p.dumps())
+
+    def test_key_translation(self):
+        new = ('These', 'Are', 'Some Keys')
+        old = ('These', 'Are', 'Some keys')
+        d = ptf.key_translation(new, old)
+        self.assertEqual(tuple(d.keys()), old)
+        self.assertEqual(tuple(d.values()), new)
