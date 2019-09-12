@@ -65,9 +65,7 @@ C,2019-104T14:35:47.849,8.997,120.273,-1.849,0,59601a,59601a,73.00,2.0,,,0,X,,0.
 C,2019-104T14:57:13.953,76.748,104.099,-2.371,1,59601a,59601a,180.00,13.0,,,0,X,,0.0,,,Type=MSV,COORD Target - 170772 Dunes dubbed Romo Seasonal Processes,11010,C_59834598 H_170772,422.185 0.000,59834598,IO-REQ-CTX,1.00,5/5,T-S,5Hz,10.9,0.055
 HC,2019-104T14:57:13.953,76.748,104.099,-2.371,3,59601a,59601a,30.00,321.0,,,N/A,X,,,,1,Seasonal:,170772 Dunes dubbed Romo Seasonal Processes,11010,H C H_170772 C_59834598,0.000,170772,IO-REQ-CTX,enable,,,0,10.9,0.055
 C,2019-104T16:11:55.936,-43.214,98.963,-0.375,1,59602a,59602a,180.00,13.0,,,0,X,,0.0,,,Type=MSV,COORD Target - CTX stereo with F17_042499_1368_XN_43S261W,3,C_59835216 X_48383781,422.185 0.000,59835216,IO,1.00,5/5,T-S,5Hz,10.9,8.546
-XC,2019-104T16:11:55.936,-43.214,98.963,-0.375,1,59602a,59602a,19.22,10.0,,,d:/ctx/ctx_itl22.nifl,X,5242,1.88,,0,,CTX
-stereo with F17_042499_1368_XN_43S261W,3,C X
-C_59835216,395.000,48383781,IO,1.70,1,,1,10.9,8.546'''
+XC,2019-104T16:11:55.936,-43.214,98.963,-0.375,1,59602a,59602a,19.22,10.0,,,d:/ctx/ctx_itl22.nifl,X,5242,1.88,,0,,CTX stereo with F17_042499_1368_XN_43S261W,3,C X C_59835216,395.000,48383781,IO,1.70,1,,1,10.9,8.546'''
 
 
 class TestVariables(unittest.TestCase):
@@ -127,7 +125,7 @@ Instrument set,Predict time,Latitude,Longitude,Elevation,Observation type,Orbit 
                          list(four.keys()))
 
         one = ptf.PTF(ptf_str)
-        self.assertEqual(33, len(one))
+        self.assertEqual(31, len(one))
 
         self.assertRaises(IndexError, ptf.PTF)
 
@@ -153,12 +151,12 @@ H,2019-104T01:33:31.327,19.476,312.078,-4.305,4,59594a,59594a,30.00,321.0,,,N/A,
 
     def test_load(self):
         loaded = ptf.loads(ptf_str)
-        self.assertEqual(33, len(loaded))
+        self.assertEqual(31, len(loaded))
 
         m = mock_open(read_data=ptf_str)
         with patch('ptf.open', m):
             loaded = ptf.load('path/to/ptf')
-            self.assertEqual(33, len(loaded))
+            self.assertEqual(31, len(loaded))
 
     def test_guess_encoding(self):
         m = mock_open(read_data='Regular text')
@@ -177,4 +175,4 @@ H,2019-104T01:33:31.327,19.476,312.078,-4.305,4,59594a,59594a,30.00,321.0,,,N/A,
 
     def test_dump(self):
         p = ptf.loads(ptf_str)
-        print(p.dumps())
+        # print(p.dumps())

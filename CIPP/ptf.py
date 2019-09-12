@@ -252,8 +252,9 @@ def parse(ptf_str: str) -> tuple:
 
     my_fieldnames = None
     for comment_line in c.splitlines():
-        if fieldnames[0] in comment_line:
+        if fieldnames[0].casefold() in comment_line.casefold():
             my_fieldnames = comment_line.split(',')
+            break
 
     if my_fieldnames is None:
         my_fieldnames = fieldnames
