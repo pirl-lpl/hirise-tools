@@ -59,7 +59,7 @@ class PTF(collections.abc.Sequence):
             (self.dictionary,
              self.comments,
              self.fieldnames,
-             self.ptf_recs) = self.parse(args[0])
+             self.ptf_recs) = parse(args[0])
         elif len(args) == 2:
             self.dictionary = dict(args[0])
             self.fieldnames = header_order
@@ -74,7 +74,7 @@ class PTF(collections.abc.Sequence):
             self.fieldnames = list(args[2])
             self.ptf_recs = list(args[3])
         else:
-            IndexError('accepts 1 to 4 arguments')
+            raise IndexError('accepts 1 to 4 arguments')
 
     def __str__(self):
         return(str(self.dictionary))
@@ -115,122 +115,6 @@ class PTF(collections.abc.Sequence):
         '''Gets the values from the initial portion of the ptf file.'''
         return self.dictionary.values()
 
-    @staticmethod
-    def parse(ptf_str: str) -> tuple:
-        '''Takes a string, and parses the output.
-
-           A three-element namedtuple is returned: the first element
-           is a *dictionary* of the name:value information at the
-           top of the file, the second element is a *list* of the
-           of the fields that decorate the top of the ptf rows, and
-           the third element is a *list* of collections.OrderedDict
-           that represent each row of the ptf records.
-
-           The contents of a PTF file look like this::
-
-            # FILE_TYPE: HIRISE PTF
-            # START_TIME: 2019-103T23:26:49.419
-            # STOP_TIME: 2019-117T20:27:25.780
-            # USERNAME: kblock
-            # CREATION_DATE: 2019-088T02:30:37.716
-            # SCLK_SCET:
-            # OPTG:
-            # ROLL_LIMITS:
-            # SPK:
-            # SPK:
-            ##
-            # PTF_Viewer:       org.uahirise.hirise.plan.ptf.PTF_Viewer (1.69 2015/06/11 00:10:03)
-            # HiPlan version:   5.0.1.1
-            # Java version:     1.8.0_162
-            # OS version:       Mac OS X / x86_64 / 10.13.3
-            #
-            # Instrument Set,Predict Time,Latitude,Longitude,Elevation,Observation Type,Orbit Number,Orbit Alternatives,Observation Duration,Setup Duration,Orbital Data Table,Parameters Table,Sequence Filename,Downlink Priority,Product ID,Spare 1,Spare 2,Spare 3,Spare 4,Comment,Request Priority,Coordinated Track History,Raw Data Volume,Team Database ID,Request Category,Compression,Pixel Scale,Observation Mode,Ancillary Data,Ls,Roll Angle
-            # 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
-            # Instrument set,Predict time,Latitude,Longitude,Elevation,Observation type,Orbit number,Orbit alternatives,Observation duration,Setup duration,Orbital data table,Parameters table,Sequence filename,Downlink priority,Product ID,Spare 1,Spare 2,Spare 3,Spare 4,Comment,Request priority,Coordinated track history,Raw data volume,Team database ID,Request category,Compression,Pixel scale,Observation mode,Ancillary data,LsubS,Roll angle
-            H,2019-109T03:06:32.050,18.169,336.125,-3.547,3,59659a,59659a 59725a,30.00,321.0,,,N/A,X,,,,1,,164320 Oxia Planum ExoMars Landing Site Future Exploration/Landing Sites PUB,16500,,0.000,164320,MH-MEP-REQ-CTX,enable,,,0,13.0,-4.222
-            [... more comma-separated lines like above ...]
-
-           But this function sees it like this::
-
-                # k: v
-                # k: v
-                # k: v
-                [... other lines like this ...]
-                # k: v
-                # k: v
-                ##
-                # comments
-                # comments
-                #
-                # x,x,x,x,x
-                # x,x,x,x,x
-                # h,h,h,h,h
-                n,n,n,n,n
-                [... more comma-separated lines like above ...]
-
-           Where each of the letters above is a string value that the parser
-           reads.
-
-           First, it takes all of the ``k`` and ``v`` elements and saves them
-           as the keys and values in the returned dictionary.
-
-           Anything below the ``##`` line, but that isn't the ``h`` or ``x``
-           elements are put into a comments string.
-
-           Second, the ``h`` elements are returned as the list of
-           fieldnames.
-
-           It ignores the two lines of ``x`` elements, as they're redundant.
-
-           Third, it reads the lines with ``n`` and stores each row as a
-           dictionary whose keys are the ``h`` values and whose values are
-           the ``n`` values.
-        '''
-        d = dict().fromkeys(header_order)
-        d['SPK'] = list()
-        c = ''
-        fieldnames = []
-        ptf_rows = []
-        lines = collections.deque(ptf_str.splitlines())
-        ft = lines.popleft().lstrip('#').strip()
-        if ft.startswith('FILE_TYPE:'):
-            (k, v) = ft.split(':')
-            d[k] = v.strip()
-        else:
-            raise ValueError('This file does not start with FILE_TYPE.')
-        line = lines.popleft()
-        while not line.startswith('##'):
-            if line.startswith('#'):
-                (k, v) = line.split(':', maxsplit=1)
-                if k.lstrip('#').strip() == 'SPK' and v.strip():
-                    d['SPK'].append(v.strip())
-                else:
-                    d[k.lstrip('#').strip()] = v.strip()
-            else:
-                raise ValueError('Insufficient header elements for a PTF.')
-            line = lines.popleft()
-
-        line = lines.popleft()
-        while line.startswith('#'):
-            c += line.lstrip('#').strip() + '\n'
-            line = lines.popleft()
-        lines.appendleft(line)
-
-        my_fieldnames = None
-        for comment_line in c.splitlines():
-            if fieldnames[0] in comment_line:
-                my_fieldnames = comment_line.split(',')
-
-        if my_fieldnames is None:
-            my_fieldnames = fieldnames
-
-        reader = csv.DictReader(lines, fieldnames=my_fieldnames)
-
-        for row in reader:
-            ptf_rows.append(row)
-
-        return(d, c, my_fieldnames, ptf_rows)
-
     def dumps(self) -> str:
         s = io.StringIO()
         return(self._dump_it(s).getvalue())
@@ -267,13 +151,128 @@ class PTF(collections.abc.Sequence):
         return f
 
 
+def parse(ptf_str: str) -> tuple:
+    '''Takes a string, and parses the output.
+
+       A three-element namedtuple is returned: the first element
+       is a *dictionary* of the name:value information at the
+       top of the file, the second element is a *list* of the
+       of the fields that decorate the top of the ptf rows, and
+       the third element is a *list* of collections.OrderedDict
+       that represent each row of the ptf records.
+
+       The contents of a PTF file look like this::
+
+        # FILE_TYPE: HIRISE PTF
+        # START_TIME: 2019-103T23:26:49.419
+        # STOP_TIME: 2019-117T20:27:25.780
+        # USERNAME: kblock
+        # CREATION_DATE: 2019-088T02:30:37.716
+        # SCLK_SCET:
+        # OPTG:
+        # ROLL_LIMITS:
+        # SPK:
+        # SPK:
+        ##
+        # PTF_Viewer:       org.uahirise.hirise.plan.ptf.PTF_Viewer (1.69 2015/06/11 00:10:03)
+        # HiPlan version:   5.0.1.1
+        # Java version:     1.8.0_162
+        # OS version:       Mac OS X / x86_64 / 10.13.3
+        #
+        # Instrument Set,Predict Time,Latitude,Longitude,Elevation,Observation Type,Orbit Number,Orbit Alternatives,Observation Duration,Setup Duration,Orbital Data Table,Parameters Table,Sequence Filename,Downlink Priority,Product ID,Spare 1,Spare 2,Spare 3,Spare 4,Comment,Request Priority,Coordinated Track History,Raw Data Volume,Team Database ID,Request Category,Compression,Pixel Scale,Observation Mode,Ancillary Data,Ls,Roll Angle
+        # 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+        # Instrument set,Predict time,Latitude,Longitude,Elevation,Observation type,Orbit number,Orbit alternatives,Observation duration,Setup duration,Orbital data table,Parameters table,Sequence filename,Downlink priority,Product ID,Spare 1,Spare 2,Spare 3,Spare 4,Comment,Request priority,Coordinated track history,Raw data volume,Team database ID,Request category,Compression,Pixel scale,Observation mode,Ancillary data,LsubS,Roll angle
+        H,2019-109T03:06:32.050,18.169,336.125,-3.547,3,59659a,59659a 59725a,30.00,321.0,,,N/A,X,,,,1,,164320 Oxia Planum ExoMars Landing Site Future Exploration/Landing Sites PUB,16500,,0.000,164320,MH-MEP-REQ-CTX,enable,,,0,13.0,-4.222
+        [... more comma-separated lines like above ...]
+
+       But this function sees it like this::
+
+            # k: v
+            # k: v
+            # k: v
+            [... other lines like this ...]
+            # k: v
+            # k: v
+            ##
+            # comments
+            # comments
+            #
+            # x,x,x,x,x
+            # x,x,x,x,x
+            # h,h,h,h,h
+            n,n,n,n,n
+            [... more comma-separated lines like above ...]
+
+       Where each of the letters above is a string value that the parser
+       reads.
+
+       First, it takes all of the ``k`` and ``v`` elements and saves them
+       as the keys and values in the returned dictionary.
+
+       Anything below the ``##`` line, but that isn't the ``h`` or ``x``
+       elements are put into a comments string.
+
+       Second, the ``h`` elements are returned as the list of
+       fieldnames.
+
+       It ignores the two lines of ``x`` elements, as they're redundant.
+
+       Third, it reads the lines with ``n`` and stores each row as a
+       dictionary whose keys are the ``h`` values and whose values are
+       the ``n`` values.
+    '''
+    d = dict().fromkeys(header_order)
+    d['SPK'] = list()
+    c = ''
+    ptf_rows = []
+    lines = collections.deque(ptf_str.splitlines())
+    ft = lines.popleft().lstrip('#').strip()
+    if ft.startswith('FILE_TYPE:'):
+        (k, v) = ft.split(':')
+        d[k] = v.strip()
+    else:
+        raise ValueError('This file does not start with FILE_TYPE.')
+    line = lines.popleft()
+    while not line.startswith('##'):
+        if line.startswith('#'):
+            (k, v) = line.split(':', maxsplit=1)
+            if k.lstrip('#').strip() == 'SPK' and v.strip():
+                d['SPK'].append(v.strip())
+            else:
+                d[k.lstrip('#').strip()] = v.strip()
+        else:
+            raise ValueError('Insufficient header elements for a PTF.')
+        line = lines.popleft()
+
+    line = lines.popleft()
+    while line.startswith('#'):
+        c += line.lstrip('#').strip() + '\n'
+        line = lines.popleft()
+    lines.appendleft(line)
+
+    my_fieldnames = None
+    for comment_line in c.splitlines():
+        if fieldnames[0] in comment_line:
+            my_fieldnames = comment_line.split(',')
+
+    if my_fieldnames is None:
+        my_fieldnames = fieldnames
+
+    reader = csv.DictReader(lines, fieldnames=my_fieldnames)
+
+    for row in reader:
+        ptf_rows.append(row)
+
+    return(d, c, my_fieldnames, ptf_rows)
+
+
 def loads(ptf_str: str) -> PTF:
     return PTF(ptf_str)
 
 
 def load(ptf_path: os.PathLike) -> PTF:
     with open(ptf_path, 'r',
-              encoding=guess_encoding(f)) as f:
+              encoding=guess_encoding(ptf_path)) as f:
         ptf_str = f.read()
 
     return loads(ptf_str)
