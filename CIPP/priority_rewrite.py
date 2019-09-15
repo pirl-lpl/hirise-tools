@@ -21,6 +21,7 @@ import argparse
 import csv
 import collections
 import getpass
+import io
 import logging
 import os
 from datetime import datetime
@@ -104,7 +105,7 @@ def priority_rewrite(records, reset_str=None, keepzero=False) -> list:
     return new_records
 
 
-def make_reset_dict(s: str, priorities) -> dict:
+def make_reset_dict(s: str, priorities: collections.Counter) -> dict:
     reset = dict()
     if s:
         for elem in s.split(','):
@@ -135,7 +136,7 @@ def get_records_for_this_priority(pri: int, records: list, reset: dict) -> list:
     return out_records
 
 
-def is_enough_space(priority: int, next_priority, span: int) -> bool:
+def is_enough_space(priority: int, next_priority: int, span: int) -> bool:
     if next_priority is None:
         return True
     if span <= (next_priority - priority):
@@ -167,7 +168,7 @@ def write_output(seq, records, output=None) -> str:
         fieldnames = seq[0].keys()
 
     if isinstance(seq, ptf.PTF):
-        new_ptf = ptf.ptf(seq.dictionary, seq.fieldnames, records)
+        new_ptf = ptf.PTF(seq.dictionary, seq.fieldnames, records)
         new_ptf['USERNAME'] = getpass.getuser()
         new_ptf['CREATION_DATE'] = datetime.utcnow().strftime('%Y-%jT%H:%M:%S')
         if output:
@@ -175,18 +176,22 @@ def write_output(seq, records, output=None) -> str:
         else:
             out_string = new_ptf.dumps()
     else:
-        if output:
-            with open(output, 'w') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader()
-                for row in records:
-                    writer.writerow(row)
+        if output is None:
+            csvfile = io.StringIO()
+            dict_write(csvfile, fieldnames, records)
+            out_string = csvfile.getvalue()
+
         else:
-            print(str(fieldnames))
-            for row in records:
-                print(row)
+            with open(output, 'w') as csvfile:
+                dict_write(csvfile, fieldnames, records)
 
     return out_string
+
+
+def dict_write(filelike, fieldnames, records):
+    writer = csv.DictWriter(filelike, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(records)
 
 
 if __name__ == "__main__":
