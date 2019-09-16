@@ -24,7 +24,7 @@ it compares the IDs with the records in the input IOF PTF."""
 
 import argparse
 import csv
-import optparse
+import os
 import sys
 
 import ptf
@@ -53,9 +53,8 @@ can be a HiRISE PTF, IPTF, or CSV file.''')
     try:
         ptf = ptf.load(args.ptf)
         for record in ptf:
-            t = find_suggestion(wth.keys(), record['Spare 4'],
-                                record['Instrument Set'])
-            if t is not None:
+            if find_suggestion(wth.keys(), record['Spare 4'],
+                               record['Instrument Set']) is not None:
                 found_suggs.append(record['Spare 4'])
 
             # if 'H' in record['Instrument Set']:
@@ -68,11 +67,10 @@ can be a HiRISE PTF, IPTF, or CSV file.''')
                   encoding=ptf.guess_encoding(args.ptf)) as ptfile:
             ptfreader = csv.reader(ptfile)
             for row in ptfreader:
-                if len(row) > 19:
-                    t = find_suggestion(wth.keys(), row[19],
-                                        row[0])
-                    if t is not None:
-                        found_suggs.append(row[19])
+                if(len(row) > 19 and
+                   find_suggestion(wth.keys(), row[19],
+                                   row[0]) is not None):
+                    found_suggs.append(row[19])
                 # if len(row) > 19 and "H" in row[0]:
                 #     for suggestion in wth.keys():
                 #         if suggestion in row[19]:
@@ -102,16 +100,17 @@ def get_wths(path: os.PathLike) -> dict:
         reader = csv.reader(f)
         for row in reader:
             if row:
-                d[row[0]] = row[0] + ',' + ','.join(row[2:])
+                d[row[0]] = row[0]
+                if len(row) > 1:
+                    d[row[0]] += ',' + ','.join(row[2:])
     return d
 
 
 def find_suggestion(wths: list, suggestion: str, inst_set: str):
-    if 'H' in inst_set:
-        if suggestion in wths:
-            return suggestion
-        else:
-            return None
+    if('H' in inst_set and suggestion in wths):
+        return suggestion
+    else:
+        return None
 
 
 if __name__ == "__main__":
