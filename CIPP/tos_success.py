@@ -48,33 +48,7 @@ can be a HiRISE PTF, IPTF, or CSV file.''')
 
     wth = get_wths(args.wth)
 
-    found_suggs = list()
-
-    try:
-        ptf = ptf.load(args.ptf)
-        for record in ptf:
-            if find_suggestion(wth.keys(), record['Spare 4'],
-                               record['Instrument Set']) is not None:
-                found_suggs.append(record['Spare 4'])
-
-            # if 'H' in record['Instrument Set']:
-            #     if record['Spare 4'] in wth:
-            #         found_suggs.append(record['Spare 4'])
-    except ValueError:
-        # Wasn't a *real* PTF, probably missing a header,
-        # so let's just try and parse it:
-        with open(args.ptf, newline='',
-                  encoding=ptf.guess_encoding(args.ptf)) as ptfile:
-            ptfreader = csv.reader(ptfile)
-            for row in ptfreader:
-                if(len(row) > 19 and
-                   find_suggestion(wth.keys(), row[19],
-                                   row[0]) is not None):
-                    found_suggs.append(row[19])
-                # if len(row) > 19 and "H" in row[0]:
-                #     for suggestion in wth.keys():
-                #         if suggestion in row[19]:
-                #             found_suggs.append(suggestion)
+    found_suggs = get_suggestions(args.ptf, wth.keys())
 
     if args.inverse:
         not_found = 0
@@ -90,7 +64,7 @@ can be a HiRISE PTF, IPTF, or CSV file.''')
     else:
         for w in found_suggs:
             print(wth[w])
-        print(f'Found: {len(found_sugss)} of {len(wth)}')
+        print(f'Found: {len(found_suggs)} of {len(wth)}')
 
 
 def get_wths(path: os.PathLike) -> dict:
@@ -106,11 +80,37 @@ def get_wths(path: os.PathLike) -> dict:
     return d
 
 
-def find_suggestion(wths: list, suggestion: str, inst_set: str):
-    if('H' in inst_set and suggestion in wths):
-        return suggestion
-    else:
-        return None
+def get_suggestions(ptfpath: os.PathLike, wth_suggs: list) -> list:
+    found = list()
+    try:
+        p = ptf.load(ptfpath)
+        for record in p:
+            s = find_suggestion(wth_suggs, record['Comment'],
+                                record['Instrument Set'])
+            if s is not None:
+                found.append(s)
+
+    except ValueError:
+        # Wasn't a *real* PTF, probably missing a header,
+        # so let's just try and parse it:
+        with open(ptfpath, newline='',
+                  encoding=ptf.guess_encoding(ptfpath)) as ptfile:
+            ptfreader = csv.reader(ptfile)
+            for row in ptfreader:
+                if len(row) > 19:
+                    s = find_suggestion(wth_suggs, row[19], row[0])
+                    if s is not None:
+                        found.append(s)
+    return found
+
+
+def find_suggestion(wths: list, ptf_comment: str, inst_set: str):
+    if('H' in inst_set):
+        comment_tokens = ptf_comment.split()
+        for suggestion in wths:
+            if suggestion == comment_tokens[0]:
+                return suggestion
+    return None
 
 
 if __name__ == "__main__":
