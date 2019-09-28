@@ -35,15 +35,28 @@ def main():
 
     ptf_template = ptf.load(args.ptf)
 
-    records = list()
-    with open(args.csv) as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            records.append(row)
+    try:
+        from_csv = ptf.load(args.csv)
+        new_ptf = ptf.PTF(ptf_template.dictionary,
+                          from_csv.fieldnames,
+                          from_csv.ptf_recs)
+    except ValueError:
+        fieldnames = None
 
-    new_ptf = ptf.PTF(ptf_template.dictionary,
-                      ptf_template.fieldnames,
-                      records)
+        with open(args.csv) as f:
+            if ptf.fieldnames[0].casefold() not in f.readline().casefold():
+                fieldnames = ptf.fieldnames
+
+        records = list()
+
+        with open(args.csv) as csvfile:
+            reader = csv.DictReader(csvfile, fieldnames=fieldnames)
+            for row in reader:
+                records.append(row)
+
+        new_ptf = ptf.PTF(ptf_template.dictionary,
+                          reader.fieldnames,
+                          records)
 
     new_ptf['USERNAME'] = getpass.getuser()
     new_ptf['CREATION_DATE'] = datetime.utcnow().strftime('%Y-%jT%H:%M:%S')
