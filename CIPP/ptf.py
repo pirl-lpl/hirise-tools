@@ -143,9 +143,10 @@ class PTF(collections.abc.Sequence):
             for line in c:
                 f.write('# ' + line + '\n')
             f.write('#\n')
-        f.write('# ' + ','.join(x.title() for x in fieldnames) + '\n')
+        # f.write('# ' + ','.join(x.title() for x in fieldnames) + '\n')
         f.write('# ' + ','.join(map(str, list(range(1, len(fieldnames) + 1)))) + '\n')
-        f.write('# ' + ','.join(x.capitalize() for x in fieldnames) + '\n')
+        # f.write('# ' + ','.join(x.capitalize() for x in fieldnames) + '\n')
+        f.write('# ' + ','.join(fieldnames) + '\n')
         writer = csv.DictWriter(f, fieldnames=fieldnames,
                                 extrasaction='ignore',
                                 restval='')

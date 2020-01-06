@@ -15,6 +15,12 @@ fields, and attempts to assign them unique priorities based on latitude."""
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# TODO: write in a mechanism that allows the user to optimize for more
+# observations per orbit, rather than strictly giving the highest priority
+# plus the lowest latitude the top spot.  Doing so may 'shadow' two other
+# observations, and if one had the same priority, but didn't 'shadow' the
+# other, you might be able to fit more observations on an orbit.
 
 
 import argparse
@@ -51,7 +57,7 @@ def main():
 
     new_ptf_records = priority_rewrite(ptf_in, args.reset, args.keepzero)
 
-    new_ptf_records.sort(key=lambda x: int(x['Request priority']), reverse=True)
+    new_ptf_records.sort(key=lambda x: int(x['Request Priority']), reverse=True)
 
     if args.dry_run:
         pass
@@ -66,7 +72,7 @@ def priority_rewrite(records, reset_str=None, keepzero=False) -> list:
     '''
     count = collections.Counter()
     for r in records:
-        count[int(r['Request priority'])] += 1
+        count[int(r['Request Priority'])] += 1
 
     reset = make_reset_dict(reset_str, count)
 
@@ -90,7 +96,7 @@ def priority_rewrite(records, reset_str=None, keepzero=False) -> list:
         if is_enough_space(pri, next_pri, count[pri]):
             for j, r in enumerate(pri_records):
                 d = collections.OrderedDict(r)
-                d['Request priority'] = pri + j
+                d['Request Priority'] = pri + j
                 new_records.append(d)
         else:
             logging.warning('Starting at {} we need {} spots, but the next '
@@ -131,7 +137,7 @@ def get_records_for_this_priority(pri: int, records: list, reset: dict) -> list:
         for (k, v) in reset.items():
             if pri == v:
                 pri = k
-    out_records = list(filter(lambda x: int(x['Request priority']) == pri,
+    out_records = list(filter(lambda x: int(x['Request Priority']) == pri,
                               records))
     return out_records
 
