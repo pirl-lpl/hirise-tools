@@ -31,7 +31,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+#
+# TODO: write in a mechanism that allows the user to optimize for more
+# observations per orbit, rather than strictly giving the highest priority
+# plus the lowest latitude the top spot.  Doing so may 'shadow' two other
+# observations, and if one had the same priority, but didn't 'shadow' the
+# other, you might be able to fit more observations on an orbit.
 
 import argparse
 import logging
