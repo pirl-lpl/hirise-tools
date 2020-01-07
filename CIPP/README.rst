@@ -17,7 +17,7 @@ Conversion
 The ``ptf2csv.py`` and ``csv2ptf.py`` function mostly like the Perl
 equivalents that have been in use by HiRISE for a decade.
 
-The difference are that ``ptf2csv.py`` has an option to add a
+The difference is that ``ptf2csv.py`` has an option to add a
 'HiReport Link' column to the end of the output CSV file.  This
 column contains a formula that when read in by most spreadsheet
 programs will result in a clickable link in that cell of your
@@ -25,7 +25,7 @@ spreadsheet to allow easy checking of HiReport.
 
 And ``csv2ptf.py`` basically ignores any non-PTF columns in your
 .csv file (like maybe that HiReport column that you had ``ptf2csv.py``
-put in, or any other columns that you might have added.
+put in, or any other columns that you might have added).
 
 
 Working with the HiTList
@@ -44,7 +44,8 @@ priorities based on latitude.
 
 ``orbit_count.py`` again, a program of the same name as a Perl program that we have.
 The difference here is that this one is 'aware' of the possible negative priorities
-given by ``prioritize_by_orbit.py``.  Although it doesn't report data volume like
+given by ``prioritize_by_orbit.py``, prints out an observation count histogram (how many 
+orbits have 3 observations, etc.) Although it doesn't report data volume like
 the Perl verison does (but it could).
 
 
@@ -52,6 +53,9 @@ TOS
 ---
 What made it through TOS?  Did my WTH make it through TOS?  Did my WTH even make
 it into the HiTLIST?  Did you elminiate my WTH from the HiTList, you monster?
+
+Or replace 'WTH' with HiKERs or CaSSIS targets or really any list of suggestions
+that you want to know are contained in a PTF.
 
 All of these questions can be answered with a PTF, text copied from the WTH list
 wiki page, and ``tos_success.py``.
