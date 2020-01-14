@@ -34,9 +34,13 @@
 #
 # TODO: write in a mechanism that allows the user to optimize for more
 # observations per orbit, rather than strictly giving the highest priority
-# plus the lowest latitude the top spot.  Doing so may 'shadow' two other
-# observations, and if one had the same priority, but didn't 'shadow' the
+# plus the lowest latitude the top spot.  Doing so may 'exclude' two other
+# observations, and if one had the same priority, but didn't 'exclude' the
 # other, you might be able to fit more observations on an orbit.
+#
+# TODO: may also want something other than abs(latitude) to be a driver,
+# possibly time since coming out of eclipse or something.  Lots of
+# possibilities.
 
 import argparse
 import logging

@@ -33,7 +33,7 @@ Working with the HiTList
 ``prioritize_by_orbit.py`` can be used on the HiTList you get from
 your HiTS to clearly flag (by changing their existing priority from
 positive to negative) which lower-priority observations in each
-orbit are 'shadowed' by the latitude-exclusion zone (defaults to
+orbit are 'excluded' by the latitude-exclusion zone (defaults to
 40 degrees in latitude on either side of an observation) of higher
 priority observations.
 
