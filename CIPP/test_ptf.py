@@ -146,7 +146,7 @@ C,2019-104T01:12:17.946,-49.559,319.085,-2.114,1,59594a,59594a,180.00,13.0,,,0,X
 H,2019-104T01:33:31.327,19.476,312.078,-4.305,4,59594a,59594a,30.00,321.0,,,N/A,X,,,0.582,,ESP_055321_1995:154996 r=-1 i=53 Ls=176 Prev=13d Next=316d URGENT,154998 Summit pit of Santa Fe Crater Geologic Contacts/Stratigraphy - urgent for stereo completion,14005,,0.000,154998,IO-REQ-CTX,enable,,,2,10.6,-21.075'''
 
         (d, c, f, r) = ptf.parse(ptf_str_no_header)
-        self.assertEquals(ptf.fieldnames, f)
+        self.assertEqual(ptf.fieldnames, f)
 
     def test_load(self):
         loaded = ptf.loads(ptf_str)

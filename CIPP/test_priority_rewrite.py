@@ -22,7 +22,7 @@ from unittest.mock import patch, mock_open
 import priority_rewrite as pr
 
 
-hitlist = '''Instrument set,Predict time,Latitude,Longitude,Elevation,Observation type,Orbit number,Orbit alternatives,Observation duration,Setup duration,Orbital data table,Parameters table,Sequence filename,Downlink priority,Product ID,Spare 1,Spare 2,Spare 3,Spare 4,Comment,Request priority,Coordinated track history,Raw data volume,Team database ID,Request category,Compression,Pixel scale,Observation mode,Ancillary data,LsubS,Roll angle,
+hitlist = '''Instrument Set,Predict Time,Latitude,Longitude,Elevation,Observation Type,Orbit Number,Orbit Alternatives,Observation Duration,Setup Duration,Orbital Data Table,Parameters Table,Sequence Filename,Downlink Priority,Product ID,Spare 1,Spare 2,Spare 3,Spare 4,Comment,Request Priority,Coordinated Track History,Raw Data Volume,Team Database ID,Request Category,Compression,Pixel Scale,Observation Mode,Ancillary Data,LsubS,Roll Angle,
 H,2019-109T03:06:32.050,18.169,336.125,-3.547,3,59659a,59659a 59725a,30,321,,,N/A,X,,,,1,,164320 Oxia Planum ExoMars Landing Site Future Exploration/Landing Sites PUB,16500,,0,164320,MH-MEP-REQ-CTX,enable,,,0,13,-4.222,HiReport
 H,2019-114T06:32:07.110,18.415,335.529,-3.663,4,59725a,59725a 59659a,30,321,,,N/A,X,,,,1,,169940 Oxia Planum ExoMars Landing Site Future Exploration/Landing Sites PUB,16300,,0,169940,MH-MEP-REQ-CTX,enable,,,0,15.5,-17.764,HiReport
 H,2019-112T07:39:55.229,-4.734,298.577,-4.189,3,59700a,59700a 59766a,30,321,,,N/A,X,,,,1,Seasonal: ESP_043876_1755:118228,118256 Monitor slopes in Juventae Chasma Mass Wasting Processes,15000,C,,118256,IO-REQ-CTX,enable,,,0,14.6,7.786,HiReport
@@ -66,9 +66,9 @@ class TestFunctions(unittest.TestCase):
                              pr.sort_and_filter(i, keepzero=True))
 
     def test_get_records_for_this_priority(self):
-        r = [{'Request priority': 800, 'Name': 'One at priority 800'},
-             {'Request priority': 800, 'Name': 'Two at Priority 800'},
-             {'Request priority': 888, 'Name': 'Oddball'}]
+        r = [{'Request Priority': 800, 'Name': 'One at priority 800'},
+             {'Request Priority': 800, 'Name': 'Two at Priority 800'},
+             {'Request Priority': 888, 'Name': 'Oddball'}]
         self.assertEqual(2, len(pr.get_records_for_this_priority(800,
                                                                  r, {1: 2, 3: 4})))
         self.assertEqual(1, len(pr.get_records_for_this_priority(800,
@@ -80,13 +80,13 @@ class TestFunctions(unittest.TestCase):
         self.assertFalse(pr.is_enough_space(10, 14, 5))
 
     def test_priority_rewrite(self):
-        r = [{'Request priority': 800, 'Name': 'One at priority 800',
+        r = [{'Request Priority': 800, 'Name': 'One at priority 800',
               'Latitude': 40},
-             {'Request priority': 800, 'Name': 'Two at Priority 800',
+             {'Request Priority': 800, 'Name': 'Two at Priority 800',
               'Latitude': 30},
-             {'Request priority': 888, 'Name': 'Oddball',
+             {'Request Priority': 888, 'Name': 'Oddball',
               'Latitude': 25}]
-        self.assertEqual(collections.OrderedDict([('Request priority', 700),
+        self.assertEqual(collections.OrderedDict([('Request Priority', 700),
                                                   ('Name', 'One at priority 800'),
                                                   ('Latitude', 40)]),
                          pr.priority_rewrite(r, '800:700')[0])
