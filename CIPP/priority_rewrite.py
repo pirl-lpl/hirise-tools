@@ -70,7 +70,7 @@ def priority_rewrite(records, reset_str=None, keepzero=False) -> list:
 
     reset = make_reset_dict(reset_str, count)
 
-    for k in count.keys():
+    for k in tuple(count.keys()):
         if k in reset:
             count[reset[k]] = count[k]
             del count[k]
