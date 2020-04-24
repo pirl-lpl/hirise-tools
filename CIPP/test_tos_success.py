@@ -29,10 +29,24 @@ XC,2019-104T01:12:17.946,-49.559,319.085,-2.114,1,59594a,59594a,13.45,10.0,,,d:/
 H,2019-104T01:33:31.327,19.476,312.078,-4.305,4,59594a,59594a,30.00,321.0,,,N/A,X,,,0.582,,ESP_055321_1995:154996 r=-1 i=53 Ls=176 Prev=13d Next=316d URGENT,154998 Summit pit of Santa Fe Crater Geologic Contacts/Stratigraphy - urgent for stereo completion,14005,,0.000,154998,IO-REQ-CTX,enable,,,2,10.6,-21.075'''
 
 
+def my_mock_open(read_data):
+    # For Python 3.6, we need to add the __iter__ and __next__
+    # methods to the mock_open return, since those functions are
+    # used by the csv.reader functions in the tests here.
+    # Pyton 3.7 and higher implement these in mock_open.
+    # If we ever don't need to test for 3.6, then this
+    # function can be removed, and all occurrences of
+    # my_mock_open() can be replaced with mock_open().
+    m = mock_open(read_data=read_data)
+    m.return_value.__iter__ = lambda self: self
+    m.return_value.__next__ = lambda self: next(iter(self.readline, ''))
+    return m
+
+
 class TestFunctions(unittest.TestCase):
 
     def test_get_wths(self):
-        m = mock_open(read_data='''1234, WTH priority, This, has, commas
+        m = my_mock_open(read_data='''1234, WTH priority, This, has, commas
 567,
 890''')
         with patch('tos_success.open', m):
@@ -51,7 +65,7 @@ class TestFunctions(unittest.TestCase):
         self.assertIsNone(ts.find_suggestion(w, '777', 'H'))
 
     def test_get_suggestions(self):
-        m = mock_open(read_data=iof)
+        m = my_mock_open(read_data=iof)
         with patch('tos_success.open', m):
             with patch('ptf.open', m):
                 self.assertEqual(['163582'],
