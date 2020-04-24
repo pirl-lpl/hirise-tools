@@ -29,10 +29,24 @@ H,2019-112T07:39:55.229,-4.734,298.577,-4.189,3,59700a,59700a 59766a,30,321,,,N/
 H,2019-110T07:00:21.207,-12.137,289.486,-4.349,3,59740a,59740a 59674a,30,321,,,N/A,X,,,,1,,160087 East Melas Chasm floor deposits Eolian Processes,15000,,,160087,IO-REQ-CTX,enable,,,0,13.6,5.138,HiReport'''
 
 
+def my_mock_open(read_data):
+    # For Python 3.6, we need to add the __iter__ and __next__
+    # methods to the mock_open return, since those functions are
+    # used by the csv.reader functions in the tests here.
+    # Pyton 3.7 and higher implement these in mock_open.
+    # If we ever don't need to test for 3.6, then this
+    # function can be removed, and all occurrences of
+    # my_mock_open() can be replaced with mock_open().
+    m = mock_open(read_data=read_data)
+    m.return_value.__iter__ = lambda self: self
+    m.return_value.__next__ = lambda self: next(iter(self.readline, ''))
+    return m
+
+
 class TestFunctions(unittest.TestCase):
 
     def test_get_input(self):
-        m = mock_open(read_data=hitlist)
+        m = my_mock_open(read_data=hitlist)
         with patch('priority_rewrite.open', m):
             with patch('ptf.open', m):
                 targets = pr.get_input('dummy/path/to/hitlist')
@@ -46,7 +60,7 @@ class TestFunctions(unittest.TestCase):
         self.assertIn('A,B', f.getvalue())
 
     def test_write_output(self):
-        m = mock_open(read_data=hitlist)
+        m = my_mock_open(read_data=hitlist)
         with patch('priority_rewrite.open', m):
             with patch('ptf.open', m):
                 targets = pr.get_input('dummy/path/to/hitlist')
