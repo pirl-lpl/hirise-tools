@@ -1,9 +1,4 @@
-# Mac stuff; these should not be in the repos:
-._*
-.DS_Store
-
-# Compiled stuff; we don't want compiled artifacts in our repos:
-*.[oa]
-*.class
-*.jnilib
-*.so
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
