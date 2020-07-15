@@ -17,4 +17,6 @@ of, planned HiRISE images. "Imaging mode" refers to the configuration of each of
 (excluding RED9) CCDs - which ones are returning data, and the binning mode for each. See
 the query itself for some additional detail.
 
-`mode_query_PGH_results.txt` - Sample output of the similarly named query.
+`mode_query_PGH_results.txt` - Sample output of the similarly named query. The actual 
+output of the query as written will find all observations in four modes over the whole
+mission, and so is quite large.
