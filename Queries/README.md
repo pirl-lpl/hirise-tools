@@ -12,9 +12,9 @@ These queries are largely intended to be modified by the user to suit specific t
 are distinctly USER BEWARE in most cases. Testing tends to be sharply limited to only the
 specific use case that the query was built to serve.
 
-'mode_query_PGH.sql' - Query intended to identify the imaging mode for all, or a subset
+`mode_query_PGH.sql` - Query intended to identify the imaging mode for all, or a subset
 of, planned HiRISE images. "Imaging mode" refers to the configuration of each of the 13
 (excluding RED9) CCDs - which ones are returning data, and the binning mode for each. See
 the query itself for some additional detail.
 
-'mode_query_PGH_results.txt' - Sample output of the similarly named query.
+`mode_query_PGH_results.txt` - Sample output of the similarly named query.
