@@ -11,7 +11,10 @@ the same for each CCD, that observation will be omitted from the output.
 INTENDED FOR INFORMATION ONLY. DON'T RELY ON THIS FOR VERIFICATION OF CRUCIAL 
 PLANNING DETAILS!
 
-To use: On the command line, type the following:
+To use: 
+
+First make sure you are either working from a PIRL system or with a PIRL VPN up and 
+running. On the command line, type the following:
 
 % mysql < mode_query.sql > mode_query_PGH_results.txt
 
