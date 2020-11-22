@@ -31,11 +31,13 @@ put in, or any other columns that you might have added).
 Working with the HiTList
 ------------------------
 ``prioritize_by_orbit.py`` can be used on the HiTList you get from
-your HiTS to clearly flag (by changing their existing priority from
-positive to negative) which lower-priority observations in each
-orbit are 'excluded' by the latitude-exclusion zone (defaults to
-40 degrees in latitude on either side of an observation) of higher
-priority observations.
+your HiTS (or the PTF you created with ``special_priorities.py``)
+to clearly flag (by changing their existing priority from positive
+to negative) which lower-priority observations in each orbit are
+'excluded' by the latitude-exclusion zone (this latitude zone
+exclusion is 40 degrees on either side of observation for the
+highest priority observations, and decreases with decreasing
+priority).
 
 ``priority_rewrite.py`` can be used near the end of your process when you
 have a bunch of observations that all have the same priority that each need
