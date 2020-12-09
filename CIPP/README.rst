@@ -30,12 +30,28 @@ put in, or any other columns that you might have added).
 
 Working with the HiTList
 ------------------------
+``special_priorities.py`` will modify all of those 11000 priorities
+and spread them out from 11000 to 11400, based on the priorities
+from the Special Target Requests by Cycle page. People have diligently
+entered in priorities from 1 to 10 for those Special Targets (WTHs,
+HiKERs, CaSSIS coordination targets, etc.).  If you would like to
+incorporate those priorities, you can use ``special_priorities.py``
+on the delivered HiTList.ptf to create a new "special.ptf" where
+those records have altered priorities.  This means that once you
+sort by priority everyone's highest rated WTHs will be priority
+11400, and maybe easier to pick between.  Similarly, with this
+priority modification in place, you you can compare two of these
+that might fall in the same orbit, just by looking at their (now modified)
+priority value.
+
 ``prioritize_by_orbit.py`` can be used on the HiTList you get from
-your HiTS to clearly flag (by changing their existing priority from
-positive to negative) which lower-priority observations in each
-orbit are 'excluded' by the latitude-exclusion zone (defaults to
-40 degrees in latitude on either side of an observation) of higher
-priority observations.
+your HiTS (or the PTF you created with ``special_priorities.py``)
+to clearly flag (by changing their existing priority from positive
+to negative) which lower-priority observations in each orbit are
+'excluded' by the latitude-exclusion zone (this latitude zone
+exclusion is 40 degrees on either side of observation for the
+highest priority observations, and decreases with decreasing
+priority).
 
 ``priority_rewrite.py`` can be used near the end of your process when you
 have a bunch of observations that all have the same priority that each need
