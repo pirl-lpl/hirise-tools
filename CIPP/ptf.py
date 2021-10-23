@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright 2019, Ross A. Beyer (rbeyer@seti.org)
+# Copyright 2019, 2021, Ross A. Beyer (rbeyer@seti.org)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import csv
 import io
 import os
 
-from collections import Counter
+from collections import Counter, UserDict
 
 
 header_order = ('FILE_TYPE', 'START_TIME', 'STOP_TIME', 'USERNAME',
@@ -38,6 +38,18 @@ fieldnames = ('Instrument Set', 'Predict Time', 'Latitude', 'Longitude',
               'Raw Data Volume', 'Team Database ID',
               'Request Category', 'Compression', 'Pixel Scale',
               'Observation Mode', 'Ancillary Data', 'LsubS', 'Roll Angle')
+
+
+class PTFDict(UserDict):
+    """Provides a case-independent dict."""
+
+    def __missing__(self, key):
+
+        for k in self.data.keys():
+            if key.casefold() == k.casefold():
+                return self.data[k]
+        else:
+            raise KeyError(f"{key} could not be found.")
 
 
 class PTF(collections.abc.Sequence):
@@ -156,7 +168,7 @@ class PTF(collections.abc.Sequence):
         else:
             t = key_translation(fieldnames, self.fieldnames)
             for record in self.ptf_recs:
-                writer.writerow({t[k]: v for k, v in record.items()})
+                writer.writerow({t.get(k, k): v for k, v in record.items()})
         return f
 
 
@@ -286,7 +298,7 @@ def parse(ptf_str: str) -> tuple:
     reader = csv.DictReader(lines, fieldnames=my_fieldnames)
 
     for row in reader:
-        ptf_rows.append(row)
+        ptf_rows.append(PTFDict(row))
 
     return(d, c, my_fieldnames, ptf_rows)
 
