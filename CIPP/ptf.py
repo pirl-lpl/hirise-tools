@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import collections.abc
+import copy
 import csv
 import io
 import os
@@ -101,13 +102,21 @@ class PTF(collections.abc.Sequence):
         return len(self.ptf_recs)
 
     def __getitem__(self, key):
-        try:
-            return self.dictionary[key]
-        except KeyError:
-            return self.ptf_recs[key]
+        if isinstance(key, slice):
+            sliced = copy.deepcopy(self)
+            sliced.ptf_recs = sliced.ptf_recs[key]
+            return sliced
+        else:
+            try:
+                return self.dictionary[key]
+            except KeyError:
+                return self.ptf_recs[key]
 
     def __setitem__(self, key, value):
-        self.dictionary[key] = value
+        if isinstance(key, slice):
+            self.ptf_recs[key] = value
+        else:
+            self.dictionary[key] = value
         return
 
     def __iter__(self):
