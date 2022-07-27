@@ -52,12 +52,22 @@ non-WTH targets (10000), and then 15 degrees for priorities below that.
 #   user-specified half_widths list.
 
 import argparse
+import copy
 import logging
 import sys
 
 from itertools import groupby
 
 import priority_rewrite as pr
+
+logger = logging.getLogger(__name__)
+
+
+class SPORCError(Exception):
+
+    def __init__(self, errmsg, rec):
+        super().__init__(self, errmsg)
+        self.record = rec
 
 
 def main():
@@ -66,6 +76,12 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument("-o", "--output", required=False)
+    parser.add_argument(
+        "-l", "--logfile",
+        required=False,
+        help="The log file to write log messages to in addition "
+             "to the terminal.",
+    )
     parser.add_argument(
         "--per_orbit",
         required=False,
@@ -80,11 +96,30 @@ def main():
         action="store_true",
         help="Perform the rearranging but do not write out results.",
     )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Will report information."
+    )
     parser.add_argument("in_file", help="a .ptf or .csv file")
 
     args = parser.parse_args()
 
-    logging.basicConfig(format="%(levelname)s: %(message)s")
+    log_level = logging.WARNING
+    if args.verbose:
+        log_level = logging.INFO
+
+    logger.setLevel(log_level)
+
+    formatter = logging.Formatter("%(levelname)s: %(message)s")
+    ch = logging.StreamHandler()
+    ch.setLevel(log_level)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    if args.logfile is not None:
+        fh = logging.FileHandler(args.logfile)
+        fh.setLevel(log_level)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
 
     ptf_in = pr.get_input(args.in_file)
 
@@ -106,9 +141,10 @@ def main():
             print(out_str)
 
 
-class intervals(object):
+class Intervals(object):
     """Manages the intervals described by the latitude exclusion zones.
     """
+
     def __init__(self, half_widths=None):
         self.intervals = list()  # a list of two-tuples
         if half_widths is None:
@@ -118,6 +154,12 @@ class intervals(object):
                 half_widths.append((0, 0))
 
             self.half_widths = half_widths
+
+    def __str__(self):
+        return str(self.intervals)
+
+    def __repr__(self):
+        return "{!s}({!s}])".format(type(self).__name__, self.half_widths)
 
     def add(self, point: float, priority=None):
         """Adds an interval centered on *point* whose boundaries
@@ -144,8 +186,8 @@ class intervals(object):
                     upper_bound = max(lower[1], higher[1])
                     # replace by merged interval:
                     merged[-1] = (lower[0], upper_bound)
-        else:
-            merged.append(higher)
+                else:
+                    merged.append(higher)
 
         self.intervals = merged
         return
@@ -187,38 +229,93 @@ class intervals(object):
 def prioritize_by_orbit(records: list, half_widths, observations=4,) -> list:
     """Rewrites priorities by orbit."""
 
-    new_records = list()
-    sorted_by_o = sorted(records, key=lambda x: int(x["Orbit Number"][:-1]))
-    for orbit, g in groupby(
-        sorted_by_o, key=lambda x: int(x["Orbit Number"][:-1])
-    ):
-        exclude = intervals(half_widths)
-        obs_count = 0
-        by_orbit = list(g)
-        by_orbit.sort(key=lambda x: int(x["Request Priority"]), reverse=True)
-        for pri, pri_g in groupby(
-            by_orbit, key=lambda x: int(x["Request Priority"])
-        ):
-            recs = list(pri_g)
-            if len(recs) != 1:
-                # need to prioritize these by latitude
-                recs = pr.priority_rewrite(recs, keepzero=True)
-
-            for r in sorted(
-                recs, key=lambda x: int(x["Request Priority"]), reverse=True
+    while True:
+        records_new = copy.deepcopy(records)
+        try:
+            new_records = list()
+            sorted_by_o = sorted(records_new, key=lambda x: int(x["Orbit Number"][:-1]))
+            for orbit, g in groupby(
+                sorted_by_o, key=lambda x: int(x["Orbit Number"][:-1])
             ):
-                if obs_count < observations and not exclude.is_in(
-                    r["Latitude"]
+                exclude = Intervals(half_widths)
+                obs_count = 0
+                by_orbit = list(g)
+                by_orbit.sort(key=lambda x: int(x["Request Priority"]), reverse=True)
+                for pri, pri_g in groupby(
+                    by_orbit, key=lambda x: int(x["Request Priority"])
                 ):
-                    exclude.add(r["Latitude"], int(r["Request Priority"]))
-                    obs_count += 1
-                    r["Request Priority"] = pri
-                else:
-                    r["Request Priority"] = -1 * pri
+                    recs = list(pri_g)
+                    if pri < 0:
+                        new_records += recs
+                        continue
+                    if len(recs) != 1:
+                        # need to prioritize these by latitude
+                        recs = pr.priority_rewrite(recs, keepzero=True)
 
-                new_records.append(r)
+                    for r in sorted(
+                        recs, key=lambda x: int(x["Request Priority"]), reverse=True
+                    ):
+                        if obs_count < observations and not exclude.is_in(
+                            r["Latitude"]
+                        ):
+                            exclude.add(r["Latitude"], int(r["Request Priority"]))
+                            obs_count += 1
+                            r["Request Priority"] = pri
+                        else:
+                            r["Request Priority"] = -1 * pri
+                            if obs_count >= observations:
+                                logger.info(
+                                    f"{r['Team Database ID']} would have been "
+                                    f"observation #{observations} in orbit "
+                                    f"{orbit} and was given priority "
+                                    f"r['Request Priority']."
+                                )
+                            else:
+                                logger.info(
+                                    f"{r['Team Database ID']} (latitude: "
+                                    f"{r['Latitude']}) is in the intervals "
+                                    f"{exclude} in orbit "
+                                    f"{orbit}, priority: "
+                                    f"{r['Request Priority']}."
+                                )
 
-    return new_records
+                            if r["Spare 4"].startswith("SPORC"):
+                                # If we're knocking out one half of a SPORC,
+                                # that needs to remove the other half, which
+                                # could have a ripple in this process, so we
+                                # need to interrupt
+                                raise SPORCError(
+                                    (
+                                        f"{r['Team Database ID']} is a SPORC that "
+                                        f"could not be acquired"
+                                    ),
+                                    rec=r
+                                )
+
+                        new_records.append(r)
+
+            return new_records
+
+        except SPORCError as err:
+            spnum, other_half = (err.record["Spare 4"].split()[0]).split(":")
+            logger.info(
+                f"{r['Team Database ID']} is part of {spnum}"
+            )
+            for i, r in enumerate(records):
+                if int(r["Request Priority"]) > 0 and (
+                    r["Team Database ID"] == err.record["Team Database ID"] or
+                    r["Team Database ID"] == other_half
+                ):
+                    r["Request Priority"] = -1 * int(r["Request Priority"])
+                    logger.info(
+                        f"{r['Team Database ID']} is {spnum} and was given "
+                        f"priority {r['Request Priority']}."
+                    )
+                    records[i] = r
+
+            logger.info(
+                "Re-prioritizing from the top with this now-missing SPORC."
+            )
 
 
 if __name__ == "__main__":

@@ -29,6 +29,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-o', '--output', required=False, default='.ptf')
     parser.add_argument('-p', '--ptf', required=True)
+    parser.add_argument('-t', '--truncate', required=False, type=int)
     parser.add_argument('csv', metavar="some.csv-file")
 
     args = parser.parse_args()
@@ -60,6 +61,9 @@ def main():
 
     new_ptf['USERNAME'] = getpass.getuser()
     new_ptf['CREATION_DATE'] = datetime.utcnow().strftime('%Y-%jT%H:%M:%S')
+
+    if args.truncate:
+        new_ptf = new_ptf[:args.truncate]
 
     ptfout_path = ''
     if args.output.startswith('.'):
