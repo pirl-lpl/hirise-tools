@@ -89,6 +89,16 @@ def main():
              "will be overwritten, typically 1 or 5 are good choices here."
     )
     parser.add_argument(
+        "-r", "--high_roll",
+        nargs="?",
+        default=None,
+        const=8.8,
+        type=float,
+        help="If specified, prioritized observations with a high roll "
+             "(default %(default)s) can allow a single lower priority "
+             "observation with a similar latitude to remain prioritized."
+    )
+    parser.add_argument(
         "-l", "--logfile",
         required=False,
         help="The log file to write log messages to in addition "
@@ -141,7 +151,11 @@ def main():
     half_widths = ((17000, 40), (14600, 30), (13000, 20), (10000, 15), (0, 0))
 
     new_ptf_records = prioritize_by_orbit(
-        ptf_in, half_widths, args.per_orbit, high_alt=args.high_alt
+        ptf_in,
+        half_widths,
+        args.per_orbit,
+        high_alt=args.high_alt,
+        high_roll=args.high_roll
     )
 
     # This sorting ignores the 'a' or 'd' markers on Orbits.
@@ -241,19 +255,24 @@ class Intervals(object):
 
 
 def prioritize_by_orbit(
-    records: list, half_widths, observations=4, high_alt=None
+    records: list, half_widths, observations=4, high_alt=None, high_roll=None,
 ) -> list:
     """Rewrites priorities by orbit."""
 
     while True:
         records_new = copy.deepcopy(records)
+        out_records = list()
         try:
-            new_records = list()
+            out_records = list()
             sorted_by_o = sorted(records_new, key=lambda x: int(x["Orbit Number"][:-1]))
             for orbit, g in groupby(
                 sorted_by_o, key=lambda x: int(x["Orbit Number"][:-1])
             ):
+                # We create new_records, so that we can later examine which
+                # observations have already been prioritized for *this* orbit.
+                new_records = list()
                 exclude = Intervals(half_widths)
+                high_roll_exclude = Intervals(half_widths)
                 obs_count = 0
                 by_orbit = list(g)
                 by_orbit.sort(key=lambda x: int(x["Request Priority"]), reverse=True)
@@ -278,6 +297,7 @@ def prioritize_by_orbit(
                             obs_count += 1
                             r["Request Priority"] = pri
                         else:
+                            kept = False
                             if (
                                 high_alt is not None and
                                 abs(float(r["Latitude"])) > 65 and
@@ -294,7 +314,42 @@ def prioritize_by_orbit(
                                     f"latitude and had more than 3 Alternative "
                                     f"orbits."
                                 )
-                            else:
+                                kept = True
+
+                            if(
+                                high_roll is not None and
+                                abs(float(r["Roll Angle"])) < 5.0
+                            ):
+                                for nr in new_records:
+                                    if (
+                                        int(nr["Request Priority"]) > 0 and
+                                        abs(
+                                            float(r["Latitude"]) -
+                                            float(nr["Latitude"])
+                                        ) < 5.0 and
+                                        not high_roll_exclude.is_in(
+                                            r["Latitude"]
+                                        ) and
+                                        abs(float(nr["Roll Angle"])) > high_roll
+                                    ):
+                                        high_roll_exclude.add(
+                                            r["Latitude"],
+                                            int(r["Request Priority"])
+                                        )
+                                        r["Request Priority"] = pri
+                                        logger.info(
+                                            f"{r['Team Database ID']} would "
+                                            f"have been deprioritized in orbit "
+                                            f"{orbit}, but has a similar "
+                                            f"latitude as a prioritized "
+                                            f"observation "
+                                            f"({nr['Team Database ID']}) with "
+                                            f"a high roll (> {high_roll})."
+                                        )
+                                        kept = True
+                                        break
+
+                            if not kept:
                                 r["Request Priority"] = -1 * pri
                                 if obs_count >= observations:
                                     logger.info(
@@ -327,7 +382,9 @@ def prioritize_by_orbit(
 
                         new_records.append(r)
 
-            return new_records
+                out_records += new_records
+
+            return out_records
 
         except SPORCError as err:
             spnum, other_half = (err.record["Spare 4"].split()[0]).split(":")
