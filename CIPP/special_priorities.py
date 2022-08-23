@@ -100,7 +100,6 @@ def apply_priorities(records: list, basepriority: int, specials: dict):
     by 10 and added to *basepriority* + 300.
     """
 
-
     new_records = list()
 
     for r in records:
@@ -109,7 +108,7 @@ def apply_priorities(records: list, basepriority: int, specials: dict):
                 sp_pri = specials[r["Team Database ID"]]
                 orig_pri = int(r["Request Priority"])
                 if 1 <= sp_pri <= 10:
-                    r["Request Priority"] = orig_pri + 300 + (sp_pri * 10 )
+                    r["Request Priority"] = orig_pri + 300 + (sp_pri * 10)
                 else:
                     raise ValueError(
                         f"The priority from the special file ({sp_pri}) is "
@@ -122,7 +121,7 @@ def apply_priorities(records: list, basepriority: int, specials: dict):
             else:
                 logging.warning(
                     f"WTH {r['Team Database ID']} has a priority "
-                    f"of {r['Request Priority']}, FWIW.")
+                    f"of {r['Request Priority']}, no priority change.")
 
         new_records.append(r)
 
