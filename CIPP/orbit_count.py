@@ -47,10 +47,14 @@ def orbit_count(records: list) -> str:
         report_dict = {'orbit': orbit, 'pos': 0, 'neg': 0}
 
         for rec in g:
-            if int(rec['Request Priority']) > 0:
-                report_dict['pos'] += 1
-            else:
-                report_dict['neg'] += 1
+            try:
+                if int(rec['Request Priority']) > 0:
+                    report_dict['pos'] += 1
+                else:
+                    report_dict['neg'] += 1
+            except ValueError:
+                # Probably has nothing in Request Priority.
+                pass
 
         reports.append(report_dict)
 

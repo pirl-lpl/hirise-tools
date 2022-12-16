@@ -154,7 +154,7 @@ def get_input(p: os.PathLike) -> collections.abc.Sequence:
             reader = csv.DictReader(csvfile)
             seq = list()
             for row in reader:
-                seq.append(row)
+                seq.append(ptf.PTFDict(row))
 
     return seq
 
