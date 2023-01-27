@@ -321,7 +321,7 @@ def load(ptf_path: os.PathLike) -> PTF:
               encoding=guess_encoding(ptf_path)) as f:
         ptf_str = f.read()
 
-    return loads(ptf_str)
+    return loads(ptf_str.lstrip(u'\ufeff'))
 
 
 def guess_encoding(path):
