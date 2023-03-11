@@ -84,9 +84,9 @@ def main():
         type=int,
         help="Allow high-latitude observations with more than three Orbit "
              "Alternatives to remain, even if they would otherwise be "
-             "deprioritized.  By default, the priority will not altered, but "
-             "if a non-negative integer is given, that is the priority that "
-             "will be overwritten, typically 1 or 5 are good choices here."
+             "deprioritized.  By default, the priority will not be altered, "
+             "but if a non-negative integer is given, that is the priority "
+             "that will be overwritten, typically 1 or 5 are good choices here."
     )
     parser.add_argument(
         "-r", "--high_roll",
