@@ -2,7 +2,7 @@
 """Reads a text file WTH list to extract the suggestions, and
 it compares the IDs with the records in the input IOF PTF."""
 
-# Copyright 2018,2019, Ross A. Beyer (rbeyer@seti.org)
+# Copyright 2018-2023, Ross A. Beyer (rbeyer@seti.org)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,9 +33,9 @@ import ptf
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      epilog='''
-The WTH list can be a simple text file pasted from the WTH wiki page, or
-it can be a CSV file exported from a spreadsheet application. The PTF
-can be a HiRISE PTF, IPTF, or CSV file.''')
+The WTH list can be a simple text file pasted from the WTH wiki page,
+the STaR tool, or it can be a CSV file exported from a spreadsheet application.
+The PTF can be a HiRISE PTF, IPTF, or CSV file.''')
     parser.add_argument('-i', '--inverse', required=False,
                         action='store_true',
                         help='Report on suggestions NOT found in the PTF.')
@@ -74,9 +74,14 @@ def get_wths(path: os.PathLike) -> dict:
         reader = csv.reader(f)
         for row in reader:
             if row:
-                d[row[0]] = row[0]
-                if len(row) > 1:
-                    d[row[0]] += ',' + ','.join(row[2:])
+                if len(row) == 1:
+                    d[row[0]] = row[0]
+                elif len(row) <= 4:
+                    # This came from the old WTH wiki page
+                    d[row[0]] = ",".join(row)
+                else:
+                    # Guessing that this came from C&P from STaR:
+                        d[row[1]] = ",".join(row[1:])
     return d
 
 
