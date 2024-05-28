@@ -39,6 +39,10 @@ The PTF can be a HiRISE PTF, IPTF, or CSV file.''')
     parser.add_argument('-i', '--inverse', required=False,
                         action='store_true',
                         help='Report on suggestions NOT found in the PTF.')
+    parser.add_argument("-l", "--limited", action="store_true",
+                        help="Only print limited information.")
+    parser.add_argument("-s", "--sorted", action="store_true",
+                        help="Output sorted by suggestion number.")
     parser.add_argument('-w', '--wth', required=True,
                         help='File with text copied from WTH list.')
     parser.add_argument('ptf',
@@ -46,9 +50,12 @@ The PTF can be a HiRISE PTF, IPTF, or CSV file.''')
 
     args = parser.parse_args()
 
-    wth = get_wths(args.wth)
+    wth = get_wths(args.wth, args.limited)
 
     found_suggs = get_suggestions(args.ptf, wth.keys())
+
+    if args.sorted:
+        found_suggs.sort()
 
     if args.inverse:
         not_found = 0
@@ -67,7 +74,7 @@ The PTF can be a HiRISE PTF, IPTF, or CSV file.''')
         print(f'Found: {len(found_suggs)} of {len(wth)}')
 
 
-def get_wths(path: os.PathLike) -> dict:
+def get_wths(path: os.PathLike, limited=False) -> dict:
     d = {}
     with open(path, newline='',
               encoding=ptf.guess_encoding(path)) as f:
@@ -81,6 +88,9 @@ def get_wths(path: os.PathLike) -> dict:
                     d[row[0]] = ",".join(row)
                 else:
                     # Guessing that this came from C&P from STaR:
+                    if limited:
+                        d[row[1]] = ", ".join([row[1], row[2], row[4]])
+                    else:
                         d[row[1]] = ",".join(row[1:])
     return d
 
