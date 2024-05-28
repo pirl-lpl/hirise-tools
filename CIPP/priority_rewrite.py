@@ -149,7 +149,8 @@ def get_input(p: os.PathLike) -> collections.abc.Sequence:
     seq = list()
     try:
         seq = ptf.load(p)
-    except ValueError:
+    except ValueError as err:
+        print(err)
         with open(p) as csvfile:
             reader = csv.DictReader(csvfile)
             seq = list()

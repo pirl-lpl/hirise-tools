@@ -2,7 +2,7 @@
 """Reads a text file WTH list to extract the suggestions, and
 it compares the IDs with the records in the input IOF PTF."""
 
-# Copyright 2018,2019, Ross A. Beyer (rbeyer@seti.org)
+# Copyright 2018-2023, Ross A. Beyer (rbeyer@seti.org)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,12 +33,16 @@ import ptf
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      epilog='''
-The WTH list can be a simple text file pasted from the WTH wiki page, or
-it can be a CSV file exported from a spreadsheet application. The PTF
-can be a HiRISE PTF, IPTF, or CSV file.''')
+The WTH list can be a simple text file pasted from the WTH wiki page,
+the STaR tool, or it can be a CSV file exported from a spreadsheet application.
+The PTF can be a HiRISE PTF, IPTF, or CSV file.''')
     parser.add_argument('-i', '--inverse', required=False,
                         action='store_true',
                         help='Report on suggestions NOT found in the PTF.')
+    parser.add_argument("-l", "--limited", action="store_true",
+                        help="Only print limited information.")
+    parser.add_argument("-s", "--sorted", action="store_true",
+                        help="Output sorted by suggestion number.")
     parser.add_argument('-w', '--wth', required=True,
                         help='File with text copied from WTH list.')
     parser.add_argument('ptf',
@@ -46,9 +50,12 @@ can be a HiRISE PTF, IPTF, or CSV file.''')
 
     args = parser.parse_args()
 
-    wth = get_wths(args.wth)
+    wth = get_wths(args.wth, args.limited)
 
     found_suggs = get_suggestions(args.ptf, wth.keys())
+
+    if args.sorted:
+        found_suggs.sort()
 
     if args.inverse:
         not_found = 0
@@ -67,16 +74,24 @@ can be a HiRISE PTF, IPTF, or CSV file.''')
         print(f'Found: {len(found_suggs)} of {len(wth)}')
 
 
-def get_wths(path: os.PathLike) -> dict:
+def get_wths(path: os.PathLike, limited=False) -> dict:
     d = {}
     with open(path, newline='',
               encoding=ptf.guess_encoding(path)) as f:
         reader = csv.reader(f)
         for row in reader:
             if row:
-                d[row[0]] = row[0]
-                if len(row) > 1:
-                    d[row[0]] += ',' + ','.join(row[2:])
+                if len(row) == 1:
+                    d[row[0]] = row[0]
+                elif len(row) <= 4:
+                    # This came from the old WTH wiki page
+                    d[row[0]] = ",".join(row)
+                else:
+                    # Guessing that this came from C&P from STaR:
+                    if limited:
+                        d[row[1]] = ", ".join([row[1], row[2], row[4]])
+                    else:
+                        d[row[1]] = ",".join(row[1:])
     return d
 
 
