@@ -356,7 +356,7 @@ def prioritize_by_orbit(
                                         f"{r['Team Database ID']} would have been "
                                         f"observation #{observations} in orbit "
                                         f"{orbit} and was given priority "
-                                        f"r['Request Priority']."
+                                        f"{r['Request Priority']}."
                                     )
                                 else:
                                     logger.info(
