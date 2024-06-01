@@ -89,9 +89,8 @@ def priority_rewrite(records, reset_str=None, keepzero=False) -> list:
 
         if is_enough_space(pri, next_pri, count[pri]):
             for j, r in enumerate(pri_records):
-                d = collections.OrderedDict(r)
-                d['Request Priority'] = pri + j
-                new_records.append(d)
+                r['Request Priority'] = pri + j
+                new_records.append(r)
         else:
             logging.warning('Starting at {} we need {} spots, but the next '
                             'priority is {}.'.format(pri,
@@ -100,8 +99,7 @@ def priority_rewrite(records, reset_str=None, keepzero=False) -> list:
             logging.warning('\tLeaving these {} as identical priority '
                             '{}.'.format(count[pri], pri))
             for r in pri_records:
-                d = collections.OrderedDict(r)
-                new_records.append(d)
+                new_records.append(r)
     return new_records
 
 
