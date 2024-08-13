@@ -46,7 +46,7 @@ def my_mock_open(read_data):
 class TestFunctions(unittest.TestCase):
 
     def test_get_wths(self):
-        m = my_mock_open(read_data='''1234, WTH priority, This, has, commas
+        m = my_mock_open(read_data='''1234, This, has, commas
 567,
 890''')
         with patch('tos_success.open', m):
